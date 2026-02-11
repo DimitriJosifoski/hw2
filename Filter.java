@@ -39,48 +39,100 @@ public class Filter
          properties.load(fis);
 
          // Check if the properties exist and override defaults
-         columns = properties.getProperty("columns") != null ? Integer.parseInt(properties.getProperty("columns")) : columns;
-         precision = properties.getProperty("precision") != null ? Integer.parseInt(properties.getProperty("precision")) : precision;
-         groups = properties.getProperty("groups") != null ? Integer.parseInt(properties.getProperty("groups")) : groups;
+         if (properties.getProperty("columns") != null) 
+         {
+            int propColumns = Integer.parseInt(properties.getProperty("columns"));
+            if (propColumns > 0) columns = propColumns; // Only override if valid
+         }
+         if (properties.getProperty("precision") != null) 
+         {
+            int propPrecision = Integer.parseInt(properties.getProperty("precision"));
+            if (propPrecision > 0) precision = propPrecision; // Only override if valid
+         }
+         if (properties.getProperty("groups") != null) 
+         {
+            int propGroups = Integer.parseInt(properties.getProperty("groups"));
+            if (propGroups >= 0) groups = propGroups; // Only override if valid
+         }
          
       }
       catch (FileNotFoundException e)
       {
-         System.out.println( "filter.properties not found." );
+         // System.out.println( "filter.properties not found." );
       }
       catch (IOException e)
       {
-         e.printStackTrace(System.err);
+         System.out.println( "Error reading filter.properties: " + e.getMessage() );
          System.exit(-1);
+      }
+      catch (NumberFormatException e)
+      {
+         // Ignore
       }
       
       
       // Check for environment variables and override defaults
       try 
       {
-         columns = (System.getenv( "CS336_COLUMNS" ) != null) ? Integer.parseInt(System.getenv( "CS336_COLUMNS" )) : columns;
-         precision = (System.getenv( "CS336_PRECISION" ) != null) ? Integer.parseInt(System.getenv( "CS336_PRECISION" )) : precision;
-         groups = (System.getenv( "CS336_GROUPS" ) != null) ? Integer.parseInt(System.getenv( "CS336_GROUPS" )) : groups;
+         if (System.getenv( "CS336_COLUMNS" ) != null)
+         {
+            int envCols = Integer.parseInt(System.getenv( "CS336_COLUMNS" ));
+            if (envCols > 0) columns = envCols; // Only override if valid
+         }
+         if (System.getenv( "CS336_PRECISION" ) != null)
+         {
+            int envPrecision = Integer.parseInt(System.getenv( "CS336_PRECISION" ));
+            if (envPrecision > 0) precision = envPrecision; // Only override if valid
+         }
+         if (System.getenv( "CS336_GROUPS" ) != null)
+         {
+            int envGroups = Integer.parseInt(System.getenv( "CS336_GROUPS" ));
+            if (envGroups >= 0) groups = envGroups; // Only override if valid
+         }
       }
       catch (NumberFormatException e) 
       {
-         System.err.println("Invalid environment variable: " + e.getMessage());
-         System.exit(1);
+         // Ignore
       }
       // If there are command-line arguments, try to parse them as integers for
       // columns, precision, and groups. If parsing fails, print an error message
       if (args.length > 0)
       {
-         try
+         if (args.length >= 1) 
          {
-            columns = Integer.parseInt(args[0]);
-            precision = Integer.parseInt(args[1]);
-            groups = Integer.parseInt(args[2]);
+            try 
+            {
+               int argCols = Integer.parseInt(args[0]);
+               if (argCols > 0) columns = argCols; // Only override if valid
+            }
+            catch (NumberFormatException e) 
+            {
+               // Ignore
+            }
          }
-         catch (NumberFormatException e)
+         if (args.length >= 2) 
          {
-            System.err.println("Invalid argument: " + e.getMessage());
-            System.exit(1);
+            try 
+            {
+               int argPrecision = Integer.parseInt(args[1]);
+               if (argPrecision > 0) precision = argPrecision; // Only override if valid
+            }
+            catch (NumberFormatException e) 
+            {
+               // Ignore
+            }
+         }
+         if (args.length >= 3)
+         {
+            try 
+            {
+               int argGroups = Integer.parseInt(args[2]);
+               if (argGroups >= 0) groups = argGroups; // Only override if valid
+            }
+            catch (NumberFormatException e) 
+            {
+               // Ignore
+            }
          }
       }
 
@@ -91,28 +143,36 @@ public class Filter
       {
          double value = in.nextDouble();
          System.out.printf("%" + spaceWidth + "." + precision + "f  ", value);
-         ++columnCounter;
-         // Move to the next line after printing the specified number of columns
-         if (columnCounter == columns) 
-         {
-            System.out.println();
-            columnCounter = 0;
-         }
+         
          // Separates groups of values with a blank line
-         // TODO: input validation for things like negative numbers
          if (groups > 0) 
          {
-            ++groupCounter;
+            columnCounter++;
+            groupCounter++;
             if (groupCounter == groups) 
             {
                System.out.println("\n");
                groupCounter = 0;
                columnCounter = 0; // Reset column counter at the end of a group
             }
+            else if (columnCounter == columns) 
+            {
+               System.out.println();
+               columnCounter = 0;
+            }
+         }
+         else 
+         {
+            columnCounter++;
+            // Move to the next line after printing the specified number of columns
+            if (columnCounter == columns) 
+            {
+               System.out.println();
+               columnCounter = 0;
+            }
          }
       }
-
-
+      
       in.close();
    }
 }
